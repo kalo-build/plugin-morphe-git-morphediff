@@ -83,6 +83,36 @@ changes:
 - ✅ **Relationships** - Track relationship additions, removals, type changes
 - ✅ **Change Classification** - Automatic breaking/additive/safe classification
 
+## Usage
+
+### With Git (Recommended)
+
+Use the helper script to compare git refs:
+
+```bash
+# Compare current changes against main
+./scripts/diff-with-git.sh main HEAD
+
+# Compare two releases
+./scripts/diff-with-git.sh v1.0.0 v2.0.0
+
+# Windows
+scripts\diff-with-git.bat main HEAD
+```
+
+**Output**: `morphe-diff.yaml`
+
+See [GIT_WORKFLOW_GUIDE.md](GIT_WORKFLOW_GUIDE.md) for detailed git integration strategies.
+
+### With Directories
+
+For testing or manual workflows:
+
+```bash
+kalo compile --plugin @kalo-build/plugin-morphe-git-morphediff \
+  --config '{"baseInputPath":"./base","headInputPath":"./head","outputPath":"./diff.yaml"}'
+```
+
 ## Building
 
 ```bash
@@ -91,6 +121,15 @@ changes:
 
 # Output: dist/morphe-git-morphediff-v1.0.0.wasm
 ```
+
+## Documentation
+
+- [GETTING_STARTED.md](GETTING_STARTED.md) - Quick start guide with examples
+- [GIT_WORKFLOW_GUIDE.md](GIT_WORKFLOW_GUIDE.md) - Git integration strategies (script vs kalo kx)
+- [REQUIREMENTS.md](REQUIREMENTS.md) - Technical specifications
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Command reference
+- [SAMPLE_OUTPUT.md](SAMPLE_OUTPUT.md) - Example diff artifacts
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - What was built
 
 ## License
 

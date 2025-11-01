@@ -1,51 +1,42 @@
 # Getting Started with Morphe Git Diff Plugin
 
-## Quick Start (5 minutes)
+## Quick Start (2 minutes)
 
-### 1. Build the Plugin
+### Option A: Git-Based Diffing (Recommended)
+
+Compare your current schema against a git ref:
 
 ```bash
 # Linux/Mac
-./scripts/build.sh
+./scripts/diff-with-git.sh main HEAD
 
 # Windows
-scripts\build.bat
+scripts\diff-with-git.bat main HEAD
 ```
 
-Output: `dist/morphe-git-morphediff-v1.0.0.wasm`
+This automatically:
+1. Extracts morphe files from the base git ref
+2. Compares with your current morphe directory
+3. Generates `morphe-diff.yaml`
+4. Cleans up temp files
 
-### 2. Prepare Your Morphe Schemas
+**Output**: `morphe-diff.yaml` with semantic changes
 
-You need two versions of your morphe schema:
+---
 
-```
-my-project/
-├── base/           # Original version
-│   ├── models/
-│   ├── entities/
-│   ├── enums/
-│   └── structures/
-└── head/           # Modified version
-    ├── models/
-    ├── entities/
-    ├── enums/
-    └── structures/
-```
+### Option B: Directory-Based Diffing (Testing)
 
-### 3. Generate Diff
+If you have two morphe directories to compare:
 
 ```bash
-# Using the CLI (if integrated with kalo)
 kalo compile --plugin @kalo-build/plugin-morphe-git-morphediff \
-  --base ./base \
-  --head ./head \
-  --output ./schema-diff.yaml
+  --config '{"baseInputPath":"./base","headInputPath":"./head","outputPath":"./diff.yaml"}'
 ```
 
-Or run directly:
-```bash
-./plugin '{"baseInputPath":"./base","headInputPath":"./head","outputPath":"./diff.yaml","verbose":true}'
-```
+**Use this for**:
+- Unit testing
+- Manual comparisons
+- Non-git workflows
 
 ### 4. Review Output
 
@@ -305,6 +296,15 @@ go test ./... -v
 3. ✅ Feed to downstream plugins
 4. 🚀 Integrate into CI/CD pipeline
 
+## Git Integration
+
+For detailed information about git-based workflows:
+- See **[GIT_WORKFLOW_GUIDE.md](GIT_WORKFLOW_GUIDE.md)** for:
+  - Short-term script approach
+  - Long-term `kalo kx` vision
+  - Comparison of approaches
+  - Implementation details
+
 ## Support
 
 Check the comprehensive documentation:
@@ -312,4 +312,5 @@ Check the comprehensive documentation:
 - `REQUIREMENTS.md` - Technical details
 - `SAMPLE_OUTPUT.md` - Real examples
 - `QUICK_REFERENCE.md` - Command cheat sheet
+- `GIT_WORKFLOW_GUIDE.md` - Git integration strategies
 
