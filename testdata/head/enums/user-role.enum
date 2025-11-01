@@ -1,0 +1,7 @@
+name: UserRole
+type: String
+entries:
+  Admin: ADMIN
+  Editor: EDITOR
+  Viewer: VIEWER
+

@@ -1,0 +1,17 @@
+name: UserProfile
+fields:
+  ID:
+    type: User.ID
+    attributes:
+      - immutable
+      - mandatory
+  Email:
+    type: User.Email
+  FullName:
+    type: User.Name
+identifiers:
+  primary: ID
+related:
+  Organization:
+    type: ForOne
+

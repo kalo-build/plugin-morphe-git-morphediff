@@ -1,0 +1,13 @@
+name: UserProfile
+fields:
+  ID:
+    type: User.ID
+    attributes:
+      - immutable
+      - mandatory
+  Email:
+    type: User.Email
+identifiers:
+  primary: ID
+related: {}
+

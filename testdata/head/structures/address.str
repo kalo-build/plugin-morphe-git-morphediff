@@ -1,0 +1,9 @@
+name: Address
+fields:
+  Street:
+    type: String
+  City:
+    type: String
+  Country:
+    type: String
+

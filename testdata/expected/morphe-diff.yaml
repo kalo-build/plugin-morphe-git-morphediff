@@ -1,0 +1,102 @@
+metadata:
+  spec_version: KA:MD1:YAML1
+  source:
+    version: base
+    timestamp: "2025-01-28T00:00:00Z"
+  target:
+    version: head
+    timestamp: "2025-01-28T00:00:00Z"
+  summary:
+    total_changes: 8
+    breaking: 1
+    additive: 7
+    safe: 0
+    by_type:
+      enum: 1
+      field: 4
+      model: 1
+      relationship: 2
+  generated_at: "2025-01-28T00:00:00Z"
+  generator: morphe-git-morphediff@1.0.0
+changes:
+  - operation: modify
+    type: enum
+    target:
+      enum: UserRole
+    changes:
+      entries:
+        added:
+          Editor: EDITOR
+    classification: additive
+  - operation: add
+    type: field
+    target:
+      entity: UserProfile
+      field: FullName
+    definition:
+      type: User.Name
+    classification: additive
+  - operation: add
+    type: relationship
+    target:
+      entity: UserProfile
+      relationship: Organization
+    definition:
+      type: ForOne
+    classification: additive
+  - operation: modify
+    type: field
+    target:
+      model: User
+      field: Email
+    changes:
+      attributes:
+        before:
+          - nullable
+        after:
+          - mandatory
+    classification: breaking
+  - operation: add
+    type: field
+    target:
+      model: User
+      field: PhoneNumber
+    definition:
+      type: String
+      attributes:
+        - nullable
+    classification: additive
+  - operation: add
+    type: relationship
+    target:
+      model: User
+      relationship: ContactInfo
+    definition:
+      type: HasOne
+    classification: additive
+  - operation: add
+    type: model
+    target:
+      model: Organization
+    definition:
+      fields:
+        ID:
+          type: UUID
+          attributes:
+            - mandatory
+        Name:
+          type: String
+      identifiers:
+        primary:
+          - ID
+      related: {}
+    classification: additive
+  - operation: add
+    type: field
+    target:
+      structure: Address
+      field: Country
+    definition:
+      type: String
+    classification: additive
+
