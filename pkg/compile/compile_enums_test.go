@@ -230,3 +230,5 @@ func (suite *CompileEnumsTestSuite) TestCompareEnums_NoChanges() {
 	suite.Nil(err)
 	suite.Len(diffDoc.Changes, 0)
 }
+
+

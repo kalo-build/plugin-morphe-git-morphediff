@@ -334,3 +334,5 @@ func (suite *CompileEntitiesTestSuite) TestCompareEntities_NoChanges() {
 	suite.Nil(err)
 	suite.Len(diffDoc.Changes, 0)
 }
+
+

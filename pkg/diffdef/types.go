@@ -18,10 +18,12 @@ type Metadata struct {
 	Generator   string      `yaml:"generator,omitempty"`
 }
 
-// VersionInfo describes a schema version
+// VersionInfo describes a schema version with git provenance
 type VersionInfo struct {
-	Version   string `yaml:"version"`
-	Timestamp string `yaml:"timestamp"`
+	Ref       string `yaml:"ref"`                 // Git ref name (e.g., "base", "head", "main", "feature/xyz")
+	Commit    string `yaml:"commit,omitempty"`    // Git commit hash for reproducibility
+	Timestamp string `yaml:"timestamp"`           // When this version was captured
+	Version   string `yaml:"version,omitempty"`   // Deprecated: use Ref instead
 }
 
 // Summary provides change statistics
@@ -76,20 +78,62 @@ const (
 	ClassificationSafe     = "safe"
 )
 
+// DiffVersionConfig holds version info passed to NewDiffDocument
+type DiffVersionConfig struct {
+	Ref       string // Git ref name (e.g., "base", "main", "feature/xyz")
+	Commit    string // Git commit hash (optional but recommended)
+	Timestamp string // When this version was captured (optional, defaults to now)
+}
+
 // NewDiffDocument creates a new diff document with metadata
 func NewDiffDocument(baseVersion, headVersion string) *DiffDocument {
+	return NewDiffDocumentWithConfig(
+		DiffVersionConfig{Ref: baseVersion},
+		DiffVersionConfig{Ref: headVersion},
+	)
+}
+
+// isValidTimestamp checks if a timestamp string is valid and reasonable
+// (not empty and not a zero/near-zero time value)
+func isValidTimestamp(ts string) bool {
+	if ts == "" {
+		return false
+	}
+	// Parse and check if it's a reasonable date (after year 2000)
+	t, err := time.Parse(time.RFC3339, ts)
+	if err != nil {
+		return false
+	}
+	// Reject zero-ish times (before year 2000)
+	return t.Year() >= 2000
+}
+
+// NewDiffDocumentWithConfig creates a new diff document with full version config
+func NewDiffDocumentWithConfig(source, target DiffVersionConfig) *DiffDocument {
 	now := time.Now().UTC().Format(time.RFC3339)
+
+	sourceTimestamp := source.Timestamp
+	if !isValidTimestamp(sourceTimestamp) {
+		sourceTimestamp = now
+	}
+
+	targetTimestamp := target.Timestamp
+	if !isValidTimestamp(targetTimestamp) {
+		targetTimestamp = now
+	}
 
 	return &DiffDocument{
 		Metadata: Metadata{
 			SpecVersion: "KA:MD1:YAML1",
 			Source: VersionInfo{
-				Version:   baseVersion,
-				Timestamp: now,
+				Ref:       source.Ref,
+				Commit:    source.Commit,
+				Timestamp: sourceTimestamp,
 			},
 			Target: VersionInfo{
-				Version:   headVersion,
-				Timestamp: now,
+				Ref:       target.Ref,
+				Commit:    target.Commit,
+				Timestamp: targetTimestamp,
 			},
 			Summary: Summary{
 				ByType: make(map[string]int),
@@ -119,3 +163,5 @@ func (d *DiffDocument) AddChange(change Change) {
 	// Update type counts
 	d.Metadata.Summary.ByType[change.Type]++
 }
+
+

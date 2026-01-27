@@ -205,3 +205,5 @@ func (suite *CompileStructuresTestSuite) TestCompareStructures_NoChanges() {
 	suite.Nil(err)
 	suite.Len(diffDoc.Changes, 0)
 }
+
+

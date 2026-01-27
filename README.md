@@ -1,6 +1,6 @@
-# Morphe Diff Generator Plugin
+# Morphe Git MorpheDiff Plugin
 
-A Morphe compilation plugin that generates semantic schema diffs between two versions of a Morphe registry, producing `KA:MD1:YAML1` format diff artifacts.
+A Kalo plugin that generates semantic schema diffs between two versions of a Morphe registry, producing `KA:MD1:YAML1` format diff artifacts.
 
 ## Overview
 
@@ -13,52 +13,95 @@ This plugin compares two Morphe registry states (base and head) and generates se
 ## Purpose
 
 The generated diff artifacts can be consumed by downstream plugins to:
-- Generate SQL migration scripts
+- Generate SQL migration scripts (`plugin-morphediff-psql`)
 - Update TypeScript type definitions incrementally
 - Create API changelog documentation
 - Validate breaking changes in CI/CD pipelines
 
-## Input
+## Usage
 
-The plugin requires two Morphe registries:
+### With Kalo CLI
 
-1. **Base Registry** - The original/previous state
-   - Models directory (`.mod` files)
-   - Entities directory (`.ent` files)
-   - Enums directory (`.enum` files)
-   - Structures directory (`.str` files)
+Configure in your `kalo.yaml`:
 
-2. **Head Registry** - The new/current state
-   - Models directory (`.mod` files)
-   - Entities directory (`.ent` files)
-   - Enums directory (`.enum` files)
-   - Structures directory (`.str` files)
+```yaml
+stores:
+  # Base version from git (e.g., main branch)
+  KA_GIT_BASE:
+    format: "KA:MO1:YAML1"
+    type: "gitRepository"
+    options:
+      repoRoot: "."
+      ref: "main"
+      subPath: "morphe/registry"
+
+  # Head version (current working directory)
+  KA_MO_YAML:
+    format: "KA:MO1:YAML1"
+    type: "localFileSystem"
+    options:
+      path: "./morphe/registry"
+
+  # Output directory for diff files
+  KA_MORPHE_DIFFS:
+    format: "KA:MD1:YAML1"
+    type: "localFileSystem"
+    options:
+      path: "./morphe-diffs"
+
+plugins:
+  "@kalo-build/plugin-morphe-git-morphediff":
+    version: "v1.0.0"
+    inputs:
+      base:
+        format: "KA:MO1:YAML1"
+        store: "KA_GIT_BASE"
+      head:
+        format: "KA:MO1:YAML1"
+        store: "KA_MO_YAML"
+    output:
+      format: "KA:MD1:YAML1"
+      store: "KA_MORPHE_DIFFS"
+
+pipelines:
+  diff:
+    description: "Generate diff from git refs"
+    stages:
+      - name: "morphe-diff"
+        steps:
+          - "plugin: @kalo-build/plugin-morphe-git-morphediff"
+```
+
+Then run:
+
+```bash
+kalo run diff
+```
 
 ## Output
 
-Generates a single `morphe-diff.yaml` file containing:
-- **Metadata** - Version information, timestamps, change summary
+Generates a `morphe-diff.yaml` file containing:
+- **Metadata** - Version information, git provenance, timestamps, change summary
 - **Changes** - Ordered list of delta operations with classifications
 
-Output conforms to `KA:MD1:YAML1` specification.
-
-## Example Output
+### Example Output
 
 ```yaml
 metadata:
   spec_version: KA:MD1:YAML1
   source:
-    version: base
-    timestamp: "2025-01-15T10:30:00Z"
+    ref: main
+    commit: "5bb463a6fa647f06516858686495e78cbf570a45"
+    timestamp: "2025-06-11T07:27:03Z"
   target:
-    version: head
-    timestamp: "2025-01-20T14:45:00Z"
+    ref: head
+    timestamp: "2026-01-27T10:30:00Z"
   summary:
     total_changes: 3
     breaking: 1
     additive: 2
     safe: 0
-  generated_at: "2025-01-28T15:00:00Z"
+  generated_at: "2026-01-27T10:30:00Z"
 
 changes:
   - operation: add
@@ -73,45 +116,38 @@ changes:
     classification: additive
 ```
 
+### Git Provenance
+
+The output includes git commit hashes and timestamps for reproducibility:
+
+- **`ref`**: Git ref name (e.g., "main", "HEAD", branch name)
+- **`commit`**: Full git commit hash (only for `gitRepository` stores)
+- **`timestamp`**: Commit timestamp for git refs, or generation time for local stores
+
+### Archive Mode
+
+By default, diff files are ephemeral and should be gitignored. For historical tracking, enable archive mode in your pipeline config:
+
+```yaml
+pipelines:
+  diff:
+    stages:
+      - name: "morphe-diff"
+        steps:
+          - "plugin: @kalo-build/plugin-morphe-git-morphediff"
+        config:
+          archiveDiffs: true  # Creates timestamped files: 20260127123456_morphe-diff.yaml
+```
+
 ## Features
 
-- ✅ **Models** - Detect model additions, removals, and modifications
-- ✅ **Entities** - Track entity structure changes
-- ✅ **Enums** - Identify enum entry additions/removals
-- ✅ **Structures** - Compare structure field changes
-- ✅ **Fields** - Detect field type changes, attribute modifications
-- ✅ **Relationships** - Track relationship additions, removals, type changes
-- ✅ **Change Classification** - Automatic breaking/additive/safe classification
-
-## Usage
-
-### With Git (Recommended)
-
-Use the helper script to compare git refs:
-
-```bash
-# Compare current changes against main
-./scripts/diff-with-git.sh main HEAD
-
-# Compare two releases
-./scripts/diff-with-git.sh v1.0.0 v2.0.0
-
-# Windows
-scripts\diff-with-git.bat main HEAD
-```
-
-**Output**: `morphe-diff.yaml`
-
-See [GIT_WORKFLOW_GUIDE.md](GIT_WORKFLOW_GUIDE.md) for detailed git integration strategies.
-
-### With Directories
-
-For testing or manual workflows:
-
-```bash
-kalo compile --plugin @kalo-build/plugin-morphe-git-morphediff \
-  --config '{"baseInputPath":"./base","headInputPath":"./head","outputPath":"./diff.yaml"}'
-```
+- **Models** - Detect model additions, removals, and modifications
+- **Entities** - Track entity structure changes
+- **Enums** - Identify enum entry additions/removals
+- **Structures** - Compare structure field changes
+- **Fields** - Detect field type changes, attribute modifications
+- **Relationships** - Track relationship additions, removals, type changes
+- **Change Classification** - Automatic breaking/additive/safe classification
 
 ## Building
 
@@ -120,16 +156,25 @@ kalo compile --plugin @kalo-build/plugin-morphe-git-morphediff \
 ./scripts/build.sh
 
 # Output: dist/morphe-git-morphediff-v1.0.0.wasm
+
+# Windows
+scripts\build.bat
 ```
 
-## Documentation
+## Input Stores
 
-- [GETTING_STARTED.md](GETTING_STARTED.md) - Quick start guide with examples
-- [GIT_WORKFLOW_GUIDE.md](GIT_WORKFLOW_GUIDE.md) - Git integration strategies (script vs kalo kx)
-- [REQUIREMENTS.md](REQUIREMENTS.md) - Technical specifications
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Command reference
-- [SAMPLE_OUTPUT.md](SAMPLE_OUTPUT.md) - Example diff artifacts
-- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - What was built
+The plugin requires two Morphe registry stores:
+
+| Input | Description |
+|-------|-------------|
+| `base` | The original/previous state (typically from git) |
+| `head` | The new/current state (typically local filesystem) |
+
+Each store should contain:
+- Models directory (`.mod` files)
+- Entities directory (`.ent` files)
+- Enums directory (`.enum` files)
+- Structures directory (`.str` files)
 
 ## License
 

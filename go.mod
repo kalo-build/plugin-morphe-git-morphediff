@@ -5,8 +5,9 @@ go 1.21.6
 toolchain go1.24.2
 
 require (
-	github.com/kalo-build/morphe-go v0.0.0
+	github.com/kalo-build/morphe-go v0.0.0-20251016080731-9aae9ab2af3e
 	github.com/stretchr/testify v1.9.0
+	github.com/tetratelabs/wazero v1.7.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -16,5 +17,3 @@ require (
 	github.com/kalo-build/go-util v0.0.0-20250329083327-00e97aeff9b7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 )
-
-replace github.com/kalo-build/morphe-go => ../morphe-go

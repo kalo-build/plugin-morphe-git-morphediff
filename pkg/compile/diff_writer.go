@@ -42,3 +42,5 @@ func (w *MorpheDiffWriter) WriteDiff(diffDoc *diffdef.DiffDocument) error {
 
 	return nil
 }
+
+

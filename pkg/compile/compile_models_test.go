@@ -576,3 +576,5 @@ func (suite *CompileModelsTestSuite) TestCompareModels_PolymorphicRelationship()
 	suite.Equal(diffdef.TypeRelationship, change.Type)
 	suite.NotNil(change.Changes["for"])
 }
+
+

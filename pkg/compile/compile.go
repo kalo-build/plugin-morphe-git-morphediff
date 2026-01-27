@@ -2,6 +2,8 @@ package compile
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/kalo-build/morphe-go/pkg/registry"
 	rcfg "github.com/kalo-build/morphe-go/pkg/registry/cfg"
@@ -13,8 +15,22 @@ type MorpheDiffConfig struct {
 	BaseRegistryConfig rcfg.MorpheLoadRegistryConfig
 	HeadRegistryConfig rcfg.MorpheLoadRegistryConfig
 	OutputPath         string
-	BaseVersion        string
-	HeadVersion        string
+
+	// Version info for provenance tracking
+	BaseRef       string // Git ref name (e.g., "base", "main~1")
+	BaseCommit    string // Git commit hash (optional)
+	BaseTimestamp string // When base was captured (optional)
+	HeadRef       string // Git ref name (e.g., "head", "main")
+	HeadCommit    string // Git commit hash (optional)
+	HeadTimestamp string // When head was captured (optional)
+
+	// Output options
+	ArchiveDiffs bool   // If true, output timestamped files for history
+	OutputFile   string // Custom output filename (optional)
+
+	// Deprecated: use BaseRef/HeadRef instead
+	BaseVersion string
+	HeadVersion string
 }
 
 // MorpheToMorpheDiff generates a morphe diff document from two registry states
@@ -31,8 +47,28 @@ func MorpheToMorpheDiff(config MorpheDiffConfig) error {
 		return fmt.Errorf("failed to load head registry: %w", err)
 	}
 
-	// Create diff document
-	diffDoc := diffdef.NewDiffDocument(config.BaseVersion, config.HeadVersion)
+	// Create diff document with provenance info
+	baseRef := config.BaseRef
+	if baseRef == "" {
+		baseRef = config.BaseVersion // Backwards compatibility
+	}
+	headRef := config.HeadRef
+	if headRef == "" {
+		headRef = config.HeadVersion // Backwards compatibility
+	}
+
+	diffDoc := diffdef.NewDiffDocumentWithConfig(
+		diffdef.DiffVersionConfig{
+			Ref:       baseRef,
+			Commit:    config.BaseCommit,
+			Timestamp: config.BaseTimestamp,
+		},
+		diffdef.DiffVersionConfig{
+			Ref:       headRef,
+			Commit:    config.HeadCommit,
+			Timestamp: config.HeadTimestamp,
+		},
+	)
 
 	// Compare enums
 	if baseRegistry.HasEnums() || headRegistry.HasEnums() {
@@ -66,8 +102,20 @@ func MorpheToMorpheDiff(config MorpheDiffConfig) error {
 		}
 	}
 
+	// Determine output path
+	outputPath := config.OutputPath
+
+	// If archiveDiffs is enabled, generate a timestamped filename
+	if config.ArchiveDiffs {
+		dir := filepath.Dir(outputPath)
+		timestamp := time.Now().UTC().Format("20060102150405")
+		archivedName := fmt.Sprintf("%s_morphe-diff.yaml", timestamp)
+		outputPath = filepath.Join(dir, archivedName)
+		fmt.Printf("Archiving diff to: %s\n", archivedName)
+	}
+
 	// Write output
-	writer := NewMorpheDiffWriter(config.OutputPath)
+	writer := NewMorpheDiffWriter(outputPath)
 	if err := writer.WriteDiff(diffDoc); err != nil {
 		return fmt.Errorf("failed to write diff: %w", err)
 	}
@@ -77,6 +125,14 @@ func MorpheToMorpheDiff(config MorpheDiffConfig) error {
 		diffDoc.Metadata.Summary.Breaking,
 		diffDoc.Metadata.Summary.Additive,
 		diffDoc.Metadata.Summary.Safe)
+
+	// If archiving, also write to the default location for convenience
+	if config.ArchiveDiffs && outputPath != config.OutputPath {
+		defaultWriter := NewMorpheDiffWriter(config.OutputPath)
+		if err := defaultWriter.WriteDiff(diffDoc); err != nil {
+			fmt.Printf("Warning: could not write default diff file: %v\n", err)
+		}
+	}
 
 	return nil
 }
