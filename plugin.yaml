@@ -1,0 +1,36 @@
+name: "@kalo-build/plugin-morphe-git-morphediff"
+displayName: "Morphe Git MorpheDiff"
+description: "Generates MorpheDiff documents by comparing Morphe schemas between git refs. Produces semantic diffs for downstream migration plugins."
+version: "1.0.0"
+
+inputs:
+  base:
+    format: "KA:MO1:YAML1"
+    description: "Base Morphe schema from git ref"
+    suggestedStore:
+      name: "KA_GIT_MAIN"
+      type: "gitRepository"
+      repoRoot: "."
+      ref: "main"
+      subPath: "morphe"
+  head:
+    format: "KA:MO1:YAML1"
+    description: "Current Morphe schema (working directory)"
+    suggestedStore:
+      name: "KA_MO_YAML"
+      type: "localFileSystem"
+      path: "./morphe"
+
+output:
+  format: "KA:MD1:YAML1"
+  description: "MorpheDiff change document"
+  suggestedStore:
+    name: "KA_MORPHE_DIFF"
+    type: "localFileSystem"
+    path: "./morphe-diffs"
+
+configSchema:
+  archiveDiffs:
+    type: boolean
+    default: false
+    description: "Create timestamped diff files for historical tracking"
