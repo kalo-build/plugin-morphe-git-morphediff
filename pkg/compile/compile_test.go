@@ -81,8 +81,9 @@ func (suite *CompileTestSuite) TestMorpheToMorpheDiff() {
 
 	// Verify metadata
 	suite.Equal(expectedDiff.Metadata.SpecVersion, generatedDiff.Metadata.SpecVersion)
-	suite.Equal(expectedDiff.Metadata.Source.Version, generatedDiff.Metadata.Source.Version)
-	suite.Equal(expectedDiff.Metadata.Target.Version, generatedDiff.Metadata.Target.Version)
+	// Compare Ref (new field) - the test config sets BaseVersion/HeadVersion which maps to Ref
+	suite.Equal("base", generatedDiff.Metadata.Source.Ref)
+	suite.Equal("head", generatedDiff.Metadata.Target.Ref)
 
 	// Verify summary counts
 	suite.Equal(8, generatedDiff.Metadata.Summary.TotalChanges)

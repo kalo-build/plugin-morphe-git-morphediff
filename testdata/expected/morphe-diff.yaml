@@ -1,10 +1,10 @@
 metadata:
   spec_version: KA:MD1:YAML1
   source:
-    version: base
+    ref: base
     timestamp: "2025-01-28T00:00:00Z"
   target:
-    version: head
+    ref: head
     timestamp: "2025-01-28T00:00:00Z"
   summary:
     total_changes: 8

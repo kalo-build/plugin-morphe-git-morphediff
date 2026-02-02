@@ -8,10 +8,10 @@ inputs:
     format: "KA:MO1:YAML1"
     description: "Base Morphe schema from git ref"
     suggestedStore:
-      name: "KA_GIT_MAIN"
+      name: "KA_GIT_BASE"
       type: "gitRepository"
       repoRoot: "."
-      ref: "main"
+      ref: "${GIT_BASE_REF:-main}"
       subPath: "morphe"
   head:
     format: "KA:MO1:YAML1"

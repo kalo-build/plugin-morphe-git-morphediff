@@ -159,10 +159,21 @@ func main() {
 		}
 	}
 
-	// Check for archiveDiffs in plugin config
+	// Check for archiveDiffs and outputFormat in plugin config
+	var outputFormat compile.OutputFormat
 	if config.Config != nil {
 		if v, ok := config.Config["archiveDiffs"].(bool); ok {
 			archiveDiffs = v
+		}
+		if v, ok := config.Config["outputFormat"].(string); ok {
+			switch v {
+			case "json":
+				outputFormat = compile.OutputFormatJSON
+			case "yaml":
+				outputFormat = compile.OutputFormatYAML
+			default:
+				outputFormat = compile.OutputFormatYAML
+			}
 		}
 	}
 
@@ -176,6 +187,11 @@ func main() {
 
 	logInfo(verbose, "Base ref: %s (commit: %s)", baseRef, baseCommit)
 	logInfo(verbose, "Head ref: %s (commit: %s)", headRef, headCommit)
+
+	// Adjust output path extension for JSON format
+	if outputFormat == compile.OutputFormatJSON && filepath.Ext(outputPath) == ".yaml" {
+		outputPath = outputPath[:len(outputPath)-5] + ".json"
+	}
 
 	// Initialize the diff configuration
 	diffConfig := compile.MorpheDiffConfig{
@@ -199,6 +215,7 @@ func main() {
 		HeadCommit:    headCommit,
 		HeadTimestamp: headTimestamp,
 		ArchiveDiffs:  archiveDiffs,
+		OutputFormat:  outputFormat,
 	}
 
 	// Run diff generation

@@ -25,8 +25,9 @@ type MorpheDiffConfig struct {
 	HeadTimestamp string // When head was captured (optional)
 
 	// Output options
-	ArchiveDiffs bool   // If true, output timestamped files for history
-	OutputFile   string // Custom output filename (optional)
+	ArchiveDiffs bool         // If true, output timestamped files for history
+	OutputFile   string       // Custom output filename (optional)
+	OutputFormat OutputFormat // Output format: "yaml" (default) or "json"
 
 	// Deprecated: use BaseRef/HeadRef instead
 	BaseVersion string
@@ -115,7 +116,7 @@ func MorpheToMorpheDiff(config MorpheDiffConfig) error {
 	}
 
 	// Write output
-	writer := NewMorpheDiffWriter(outputPath)
+	writer := NewMorpheDiffWriterWithFormat(outputPath, config.OutputFormat)
 	if err := writer.WriteDiff(diffDoc); err != nil {
 		return fmt.Errorf("failed to write diff: %w", err)
 	}
@@ -128,7 +129,7 @@ func MorpheToMorpheDiff(config MorpheDiffConfig) error {
 
 	// If archiving, also write to the default location for convenience
 	if config.ArchiveDiffs && outputPath != config.OutputPath {
-		defaultWriter := NewMorpheDiffWriter(config.OutputPath)
+		defaultWriter := NewMorpheDiffWriterWithFormat(config.OutputPath, config.OutputFormat)
 		if err := defaultWriter.WriteDiff(diffDoc); err != nil {
 			fmt.Printf("Warning: could not write default diff file: %v\n", err)
 		}

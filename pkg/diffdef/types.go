@@ -4,50 +4,50 @@ import "time"
 
 // DiffDocument represents a complete morphe diff artifact
 type DiffDocument struct {
-	Metadata Metadata `yaml:"metadata"`
-	Changes  []Change `yaml:"changes"`
+	Metadata Metadata `yaml:"metadata" json:"metadata"`
+	Changes  []Change `yaml:"changes" json:"changes"`
 }
 
 // Metadata contains information about the diff context
 type Metadata struct {
-	SpecVersion string      `yaml:"spec_version"`
-	Source      VersionInfo `yaml:"source"`
-	Target      VersionInfo `yaml:"target"`
-	Summary     Summary     `yaml:"summary"`
-	GeneratedAt string      `yaml:"generated_at"`
-	Generator   string      `yaml:"generator,omitempty"`
+	SpecVersion string      `yaml:"spec_version" json:"spec_version"`
+	Source      VersionInfo `yaml:"source" json:"source"`
+	Target      VersionInfo `yaml:"target" json:"target"`
+	Summary     Summary     `yaml:"summary" json:"summary"`
+	GeneratedAt string      `yaml:"generated_at" json:"generated_at"`
+	Generator   string      `yaml:"generator,omitempty" json:"generator,omitempty"`
 }
 
 // VersionInfo describes a schema version with git provenance
 type VersionInfo struct {
-	Ref       string `yaml:"ref"`                 // Git ref name (e.g., "base", "head", "main", "feature/xyz")
-	Commit    string `yaml:"commit,omitempty"`    // Git commit hash for reproducibility
-	Timestamp string `yaml:"timestamp"`           // When this version was captured
-	Version   string `yaml:"version,omitempty"`   // Deprecated: use Ref instead
+	Ref       string `yaml:"ref" json:"ref"`                             // Git ref name (e.g., "base", "head", "main", "feature/xyz")
+	Commit    string `yaml:"commit,omitempty" json:"commit,omitempty"`   // Git commit hash for reproducibility
+	Timestamp string `yaml:"timestamp" json:"timestamp"`                 // When this version was captured
+	Version   string `yaml:"version,omitempty" json:"version,omitempty"` // Deprecated: use Ref instead
 }
 
 // Summary provides change statistics
 type Summary struct {
-	TotalChanges int            `yaml:"total_changes"`
-	Breaking     int            `yaml:"breaking"`
-	Additive     int            `yaml:"additive"`
-	Safe         int            `yaml:"safe"`
-	ByType       map[string]int `yaml:"by_type,omitempty"`
+	TotalChanges int            `yaml:"total_changes" json:"total_changes"`
+	Breaking     int            `yaml:"breaking" json:"breaking"`
+	Additive     int            `yaml:"additive" json:"additive"`
+	Safe         int            `yaml:"safe" json:"safe"`
+	ByType       map[string]int `yaml:"by_type,omitempty" json:"by_type,omitempty"`
 }
 
 // Change represents a single delta operation
 type Change struct {
-	Operation      string                 `yaml:"operation"`
-	Type           string                 `yaml:"type"`
-	Target         map[string]string      `yaml:"target,omitempty"`
-	Source         map[string]string      `yaml:"source,omitempty"`
-	Destination    map[string]string      `yaml:"destination,omitempty"`
-	Definition     map[string]interface{} `yaml:"definition,omitempty"`
-	Changes        map[string]interface{} `yaml:"changes,omitempty"`
-	RenamedTo      string                 `yaml:"renamed_to,omitempty"`
-	Fingerprint    string                 `yaml:"fingerprint,omitempty"`
-	Reason         string                 `yaml:"reason,omitempty"`
-	Classification string                 `yaml:"classification"`
+	Operation      string                 `yaml:"operation" json:"operation"`
+	Type           string                 `yaml:"type" json:"type"`
+	Target         map[string]string      `yaml:"target,omitempty" json:"target,omitempty"`
+	Source         map[string]string      `yaml:"source,omitempty" json:"source,omitempty"`
+	Destination    map[string]string      `yaml:"destination,omitempty" json:"destination,omitempty"`
+	Definition     map[string]interface{} `yaml:"definition,omitempty" json:"definition,omitempty"`
+	Changes        map[string]interface{} `yaml:"changes,omitempty" json:"changes,omitempty"`
+	RenamedTo      string                 `yaml:"renamed_to,omitempty" json:"renamed_to,omitempty"`
+	Fingerprint    string                 `yaml:"fingerprint,omitempty" json:"fingerprint,omitempty"`
+	Reason         string                 `yaml:"reason,omitempty" json:"reason,omitempty"`
+	Classification string                 `yaml:"classification" json:"classification"`
 }
 
 // Operation types
@@ -163,5 +163,3 @@ func (d *DiffDocument) AddChange(change Change) {
 	// Update type counts
 	d.Metadata.Summary.ByType[change.Type]++
 }
-
-
