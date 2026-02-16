@@ -44,6 +44,7 @@ type Change struct {
 	Destination    map[string]string      `yaml:"destination,omitempty" json:"destination,omitempty"`
 	Definition     map[string]interface{} `yaml:"definition,omitempty" json:"definition,omitempty"`
 	Changes        map[string]interface{} `yaml:"changes,omitempty" json:"changes,omitempty"`
+	EntitySnapshot map[string]interface{} `yaml:"entity_snapshot,omitempty" json:"entity_snapshot,omitempty"`
 	RenamedTo      string                 `yaml:"renamed_to,omitempty" json:"renamed_to,omitempty"`
 	Fingerprint    string                 `yaml:"fingerprint,omitempty" json:"fingerprint,omitempty"`
 	Reason         string                 `yaml:"reason,omitempty" json:"reason,omitempty"`

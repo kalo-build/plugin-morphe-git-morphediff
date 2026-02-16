@@ -10,17 +10,25 @@ import (
 func CompareEntities(baseReg, headReg *registry.Registry, diffDoc *diffdef.DiffDocument) error {
 	baseEntities := baseReg.GetAllEntities()
 	headEntities := headReg.GetAllEntities()
+	headModels := headReg.GetAllModels()
 
 	// Find added entities
 	for entityName, headEntity := range headEntities {
 		if _, exists := baseEntities[entityName]; !exists {
+			definition := serializeEntity(headEntity)
+
+			// Resolve entity field paths against the model registry
+			if resolved, err := resolveEntityDefinition(headEntity, headModels); err == nil {
+				definition["resolved"] = serializeResolved(resolved)
+			}
+
 			change := diffdef.Change{
 				Operation: diffdef.OperationAdd,
 				Type:      diffdef.TypeEntity,
 				Target: map[string]string{
 					"entity": entityName,
 				},
-				Definition:     serializeEntity(headEntity),
+				Definition:     definition,
 				Classification: diffdef.ClassificationAdditive,
 			}
 			diffDoc.AddChange(change)
@@ -46,10 +54,10 @@ func CompareEntities(baseReg, headReg *registry.Registry, diffDoc *diffdef.DiffD
 	// Find modified entities
 	for entityName, baseEntity := range baseEntities {
 		if headEntity, exists := headEntities[entityName]; exists {
-			if err := compareEntityFields(entityName, baseEntity, headEntity, diffDoc); err != nil {
+			if err := compareEntityFields(entityName, baseEntity, headEntity, headModels, diffDoc); err != nil {
 				return err
 			}
-			if err := compareEntityRelationships(entityName, baseEntity, headEntity, diffDoc); err != nil {
+			if err := compareEntityRelationships(entityName, baseEntity, headEntity, headModels, diffDoc); err != nil {
 				return err
 			}
 		}
@@ -59,7 +67,10 @@ func CompareEntities(baseReg, headReg *registry.Registry, diffDoc *diffdef.DiffD
 }
 
 // compareEntityFields compares fields between two entity versions
-func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, diffDoc *diffdef.DiffDocument) error {
+func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, headModels map[string]yaml.Model, diffDoc *diffdef.DiffDocument) error {
+	// Build entity snapshot for the head entity (post-change state)
+	snapshot := buildEntitySnapshot(headEntity, headModels)
+
 	// Find added fields
 	for fieldName, headField := range headEntity.Fields {
 		if _, exists := baseEntity.Fields[fieldName]; !exists {
@@ -71,6 +82,7 @@ func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, 
 					"field":  fieldName,
 				},
 				Definition:     serializeEntityField(headField),
+				EntitySnapshot: snapshot,
 				Classification: diffdef.ClassificationAdditive,
 			}
 			diffDoc.AddChange(change)
@@ -88,6 +100,7 @@ func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, 
 					"field":  fieldName,
 				},
 				Reason:         "Field removed from entity",
+				EntitySnapshot: snapshot,
 				Classification: diffdef.ClassificationBreaking,
 			}
 			diffDoc.AddChange(change)
@@ -125,6 +138,7 @@ func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, 
 							"field":  fieldName,
 						},
 						Changes:        changes,
+						EntitySnapshot: snapshot,
 						Classification: classifyEntityFieldModification(baseField, headField),
 					}
 					diffDoc.AddChange(change)
@@ -137,7 +151,10 @@ func compareEntityFields(entityName string, baseEntity, headEntity yaml.Entity, 
 }
 
 // compareEntityRelationships compares relationships between two entity versions
-func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.Entity, diffDoc *diffdef.DiffDocument) error {
+func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.Entity, headModels map[string]yaml.Model, diffDoc *diffdef.DiffDocument) error {
+	// Build entity snapshot for the head entity (post-change state)
+	snapshot := buildEntitySnapshot(headEntity, headModels)
+
 	// Find added relationships
 	for relName, headRel := range headEntity.Related {
 		if _, exists := baseEntity.Related[relName]; !exists {
@@ -149,6 +166,7 @@ func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.E
 					"relationship": relName,
 				},
 				Definition:     serializeEntityRelationship(headRel),
+				EntitySnapshot: snapshot,
 				Classification: diffdef.ClassificationAdditive,
 			}
 			diffDoc.AddChange(change)
@@ -166,6 +184,7 @@ func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.E
 					"relationship": relName,
 				},
 				Reason:         "Relationship removed from entity",
+				EntitySnapshot: snapshot,
 				Classification: diffdef.ClassificationBreaking,
 			}
 			diffDoc.AddChange(change)
@@ -215,6 +234,7 @@ func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.E
 							"relationship": relName,
 						},
 						Changes:        changes,
+						EntitySnapshot: snapshot,
 						Classification: diffdef.ClassificationBreaking,
 					}
 					diffDoc.AddChange(change)
@@ -224,6 +244,19 @@ func compareEntityRelationships(entityName string, baseEntity, headEntity yaml.E
 	}
 
 	return nil
+}
+
+// buildEntitySnapshot creates a full serialized entity snapshot with resolution.
+// This is included with entity field/relationship changes so downstream consumers
+// can regenerate the complete entity (e.g., recreate a SQL view).
+func buildEntitySnapshot(entity yaml.Entity, allModels map[string]yaml.Model) map[string]interface{} {
+	snapshot := serializeEntity(entity)
+
+	if resolved, err := resolveEntityDefinition(entity, allModels); err == nil {
+		snapshot["resolved"] = serializeResolved(resolved)
+	}
+
+	return snapshot
 }
 
 // Helper functions
