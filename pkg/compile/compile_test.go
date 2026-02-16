@@ -97,10 +97,13 @@ func (suite *CompileTestSuite) TestMorpheToMorpheDiff() {
 	foundPhoneNumberAdd := false
 	foundEmailModify := false
 	foundOrgAdd := false
+	foundEntityFieldAdd := false
+	foundEntityRelAdd := false
 
 	for _, change := range generatedDiff.Changes {
 		if change.Operation == diffdef.OperationAdd &&
 			change.Type == diffdef.TypeField &&
+			change.Target["model"] == "User" &&
 			change.Target["field"] == "PhoneNumber" {
 			foundPhoneNumberAdd = true
 			suite.Equal(diffdef.ClassificationAdditive, change.Classification)
@@ -108,6 +111,7 @@ func (suite *CompileTestSuite) TestMorpheToMorpheDiff() {
 
 		if change.Operation == diffdef.OperationModify &&
 			change.Type == diffdef.TypeField &&
+			change.Target["model"] == "User" &&
 			change.Target["field"] == "Email" {
 			foundEmailModify = true
 			suite.Equal(diffdef.ClassificationBreaking, change.Classification)
@@ -119,11 +123,66 @@ func (suite *CompileTestSuite) TestMorpheToMorpheDiff() {
 			foundOrgAdd = true
 			suite.Equal(diffdef.ClassificationAdditive, change.Classification)
 		}
+
+		// Entity field addition: FullName added to UserProfile
+		if change.Operation == diffdef.OperationAdd &&
+			change.Type == diffdef.TypeField &&
+			change.Target["entity"] == "UserProfile" &&
+			change.Target["field"] == "FullName" {
+			foundEntityFieldAdd = true
+			suite.Equal(diffdef.ClassificationAdditive, change.Classification)
+
+			// Verify entity_snapshot is present
+			suite.NotNil(change.EntitySnapshot, "Entity field change should include entity_snapshot")
+
+			// Verify resolved block inside entity_snapshot
+			resolved, hasResolved := change.EntitySnapshot["resolved"].(map[string]interface{})
+			suite.True(hasResolved, "entity_snapshot should contain 'resolved' block")
+			suite.Equal("User", resolved["root_model"], "resolved root_model should be User")
+
+			// Verify field_sources contains all post-change fields
+			fieldSources, hasFS := resolved["field_sources"].(map[string]interface{})
+			suite.True(hasFS, "resolved should contain field_sources")
+			suite.Contains(fieldSources, "ID", "field_sources should include ID")
+			suite.Contains(fieldSources, "Email", "field_sources should include Email")
+			suite.Contains(fieldSources, "FullName", "field_sources should include FullName")
+
+			// Verify the FullName field source resolves to User.Name
+			fullNameSource, ok := fieldSources["FullName"].(map[string]interface{})
+			suite.True(ok)
+			suite.Equal("User", fullNameSource["model"])
+			suite.Equal("Name", fullNameSource["field"])
+			suite.Equal("String", fullNameSource["type"])
+		}
+
+		// Entity relationship addition: Organization added to UserProfile
+		if change.Operation == diffdef.OperationAdd &&
+			change.Type == diffdef.TypeRelationship &&
+			change.Target["entity"] == "UserProfile" &&
+			change.Target["relationship"] == "Organization" {
+			foundEntityRelAdd = true
+			suite.Equal(diffdef.ClassificationAdditive, change.Classification)
+
+			// Verify entity_snapshot is present
+			suite.NotNil(change.EntitySnapshot, "Entity relationship change should include entity_snapshot")
+
+			// Verify snapshot contains the full post-change entity (including the new relationship)
+			related, hasRelated := change.EntitySnapshot["related"].(map[string]interface{})
+			suite.True(hasRelated, "entity_snapshot should contain 'related'")
+			suite.Contains(related, "Organization", "snapshot related should include Organization")
+
+			// Verify snapshot has the resolved block
+			resolved, hasResolved := change.EntitySnapshot["resolved"].(map[string]interface{})
+			suite.True(hasResolved, "entity_snapshot should contain 'resolved' block")
+			suite.Equal("User", resolved["root_model"])
+		}
 	}
 
 	suite.True(foundPhoneNumberAdd, "Should find PhoneNumber field addition")
 	suite.True(foundEmailModify, "Should find Email field modification")
 	suite.True(foundOrgAdd, "Should find Organization model addition")
+	suite.True(foundEntityFieldAdd, "Should find FullName entity field addition with entity_snapshot")
+	suite.True(foundEntityRelAdd, "Should find Organization entity relationship addition with entity_snapshot")
 }
 
 func (suite *CompileTestSuite) TestMorpheToMorpheDiff_EmptyRegistries() {

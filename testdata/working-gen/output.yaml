@@ -1,0 +1,165 @@
+metadata:
+    spec_version: KA:MD1:YAML1
+    source:
+        ref: base
+        timestamp: "2026-02-16T09:26:19Z"
+    target:
+        ref: head
+        timestamp: "2026-02-16T09:26:19Z"
+    summary:
+        total_changes: 8
+        breaking: 1
+        additive: 7
+        safe: 0
+        by_type:
+            enum: 1
+            field: 4
+            model: 1
+            relationship: 2
+    generated_at: "2026-02-16T09:26:19Z"
+    generator: morphe-git-morphediff@1.0.0
+changes:
+    - operation: modify
+      type: enum
+      target:
+        enum: UserRole
+      changes:
+        entries:
+            added:
+                Editor: EDITOR
+      classification: additive
+    - operation: add
+      type: field
+      target:
+        field: Country
+        structure: Address
+      definition:
+        type: String
+      classification: additive
+    - operation: add
+      type: model
+      target:
+        model: Organization
+      definition:
+        fields:
+            ID:
+                attributes:
+                    - mandatory
+                type: UUID
+            Name:
+                type: String
+        identifiers:
+            primary:
+                - ID
+        related: {}
+      classification: additive
+    - operation: add
+      type: field
+      target:
+        field: PhoneNumber
+        model: User
+      definition:
+        attributes:
+            - nullable
+        type: String
+      classification: additive
+    - operation: modify
+      type: field
+      target:
+        field: Email
+        model: User
+      changes:
+        attributes:
+            after:
+                - mandatory
+            before:
+                - nullable
+      classification: breaking
+    - operation: add
+      type: relationship
+      target:
+        model: User
+        relationship: ContactInfo
+      definition:
+        type: HasOne
+      classification: additive
+    - operation: add
+      type: field
+      target:
+        entity: UserProfile
+        field: FullName
+      definition:
+        type: User.Name
+      entity_snapshot:
+        fields:
+            Email:
+                type: User.Email
+            FullName:
+                type: User.Name
+            ID:
+                attributes:
+                    - immutable
+                    - mandatory
+                type: User.ID
+        identifiers:
+            primary:
+                - ID
+        related:
+            Organization:
+                type: ForOne
+        resolved:
+            field_sources:
+                Email:
+                    field: Email
+                    model: User
+                    type: String
+                FullName:
+                    field: Name
+                    model: User
+                    type: String
+                ID:
+                    field: ID
+                    model: User
+                    type: UUID
+            root_model: User
+      classification: additive
+    - operation: add
+      type: relationship
+      target:
+        entity: UserProfile
+        relationship: Organization
+      definition:
+        type: ForOne
+      entity_snapshot:
+        fields:
+            Email:
+                type: User.Email
+            FullName:
+                type: User.Name
+            ID:
+                attributes:
+                    - immutable
+                    - mandatory
+                type: User.ID
+        identifiers:
+            primary:
+                - ID
+        related:
+            Organization:
+                type: ForOne
+        resolved:
+            field_sources:
+                Email:
+                    field: Email
+                    model: User
+                    type: String
+                FullName:
+                    field: Name
+                    model: User
+                    type: String
+                ID:
+                    field: ID
+                    model: User
+                    type: UUID
+            root_model: User
+      classification: additive

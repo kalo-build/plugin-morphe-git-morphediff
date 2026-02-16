@@ -104,6 +104,7 @@ metadata:
   generated_at: "2026-01-27T10:30:00Z"
 
 changes:
+  # Model field addition
   - operation: add
     type: field
     target:
@@ -113,6 +114,38 @@ changes:
       type: String
       attributes:
         - nullable
+    classification: additive
+
+  # Entity addition with resolved field paths
+  - operation: add
+    type: entity
+    target:
+      entity: UserProfile
+    definition:
+      fields:
+        ID:
+          type: User.ID
+          attributes: [immutable, mandatory]
+        Email:
+          type: User.ContactInfo.Email
+      identifiers:
+        primary: ID
+      resolved:
+        root_model: User
+        field_sources:
+          ID:
+            model: User
+            field: ID
+            type: UUID
+          Email:
+            model: ContactInfo
+            field: Email
+            type: String
+        joins:
+          - from_model: User
+            relationship: ContactInfo
+            relationship_type: HasOne
+            to_model: ContactInfo
     classification: additive
 ```
 
@@ -142,12 +175,70 @@ pipelines:
 ## Features
 
 - **Models** - Detect model additions, removals, and modifications
-- **Entities** - Track entity structure changes
+- **Entities** - Track entity structure changes with **resolved field path metadata** and **entity snapshots** (see below)
 - **Enums** - Identify enum entry additions/removals
 - **Structures** - Compare structure field changes
 - **Fields** - Detect field type changes, attribute modifications
 - **Relationships** - Track relationship additions, removals, type changes
 - **Change Classification** - Automatic breaking/additive/safe classification
+
+### Entity resolution and enrichment
+
+Morphe entities are non-persistent data aggregations whose fields reference model
+field paths (e.g., `User.ContactInfo.Email`). Downstream consumers such as the
+PostgreSQL migration plugin need to know the concrete tables, columns, and joins
+these paths resolve to, but they only receive the diff -- not the full Morphe registry.
+
+To bridge that gap, this plugin **resolves entity field paths at diff-generation time**
+and embeds the result directly in the diff output:
+
+- **`resolved` block** -- included in `add entity` definitions. Contains:
+  - `root_model` -- the primary model the entity is anchored to
+  - `field_sources` -- for each entity field: the resolved model, column, and type
+  - `joins` -- list of model-to-model joins required to reach cross-model fields
+
+- **`entity_snapshot`** -- included alongside individual entity field or relationship
+  changes (`add`/`remove`/`modify` field or relationship on an entity). Contains the
+  full post-change entity definition with its own `resolved` block, enabling consumers
+  to regenerate the complete view without incremental patching.
+
+```yaml
+# Example: entity field addition with entity_snapshot
+- operation: add
+  type: field
+  target:
+    entity: UserProfile
+    field: FullName
+  definition:
+    type: User.Name
+  entity_snapshot:
+    fields:
+      ID:
+        type: User.ID
+      Email:
+        type: User.Email
+      FullName:
+        type: User.Name
+    identifiers:
+      primary:
+        - ID
+    resolved:
+      root_model: User
+      field_sources:
+        ID:
+          model: User
+          field: ID
+          type: UUID
+        Email:
+          model: User
+          field: Email
+          type: String
+        FullName:
+          model: User
+          field: Name
+          type: String
+  classification: additive
+```
 
 ## Building
 
